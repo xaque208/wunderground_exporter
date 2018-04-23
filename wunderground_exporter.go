@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/peterjliu/gowu"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/xaque208/gowu"
 	"gopkg.in/alecthomas/kingpin.v2"
 	"strconv"
 )
@@ -70,20 +70,28 @@ func init() {
 
 func main() {
 
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	var (
 		listenAddress = kingpin.Flag("web.listen-address", "Address on which to expose metrics and web interface.").Default(":9101").String()
+		configPath    = kingpin.Flag("config", "Specify the configuration directory").Default(".").String()
+		verbose       = kingpin.Flag("verbose", "Increase verbosity").Short('v').Bool()
 	)
 
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
+
+	if *verbose {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	viper.SetConfigName("wunderground_exporter")
+	viper.AddConfigPath(*configPath)
+	viper.AddConfigPath(".")
+
+	log.Debug("Reading configuration file")
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	wuApiKey := viper.GetString("wunderground.apikey")
 
