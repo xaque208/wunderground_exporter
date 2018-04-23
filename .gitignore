@@ -1,1 +1,3 @@
 config.*
+wunderground_exporter.toml
+wunderground_exporter
