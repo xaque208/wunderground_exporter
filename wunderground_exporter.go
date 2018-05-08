@@ -29,6 +29,26 @@ var (
 		Name: "wunderground_forecast_low_temperature",
 		Help: "Temperature in Celcius",
 	}, []string{"day"})
+
+	moonRiseTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "wunderground_moonrise_time",
+		Help: "Time of Moon Rise",
+	}, nil)
+
+	moonSetTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "wunderground_moonrise_set",
+		Help: "Time of Moon Set",
+	}, nil)
+
+	sunRiseTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "wunderground_sunrise_time",
+		Help: "Time of Sun Rise",
+	}, nil)
+
+	sunSetTime = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "wunderground_sunrise_set",
+		Help: "Time of Sun Set",
+	}, nil)
 )
 
 func forecastWatch(apiKey string) {
@@ -63,9 +83,44 @@ func forecastWatch(apiKey string) {
 	}
 }
 
+func astroWatch(apiKey string) {
+
+	for {
+		c := gowu.NewClient(apiKey)
+		moonPhase, sunPhase, err := c.GetAstronomy("portland", "or")
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		moonRiseHourMin, err := strconv.ParseFloat(
+			fmt.Sprintf("%d%d", moonPhase.MoonRise.Hour, moonPhase.MoonRise.Minute), 32)
+		moonSetHourMin, err := strconv.ParseFloat(
+			fmt.Sprintf("%d%d", moonPhase.MoonSet.Hour, moonPhase.MoonSet.Minute), 32)
+
+		sunRiseHourMin, err := strconv.ParseFloat(
+			fmt.Sprintf("%d%d", sunPhase.SunRise.Hour, sunPhase.SunRise.Minute), 32)
+		sunSetHourMin, err := strconv.ParseFloat(
+			fmt.Sprintf("%d%d", sunPhase.SunSet.Hour, sunPhase.SunSet.Minute), 32)
+
+		moonRiseTime.With(prometheus.Labels{}).Set(moonRiseHourMin)
+		moonSetTime.With(prometheus.Labels{}).Set(moonSetHourMin)
+
+		sunRiseTime.With(prometheus.Labels{}).Set(sunRiseHourMin)
+		sunSetTime.With(prometheus.Labels{}).Set(sunSetHourMin)
+
+		//Sleep 15 minutes between updates for API limits
+		time.Sleep(900 * time.Second)
+	}
+}
+
 func init() {
 	prometheus.MustRegister(forecastHighTemp)
 	prometheus.MustRegister(forecastLowTemp)
+	prometheus.MustRegister(moonRiseTime)
+	prometheus.MustRegister(moonSetTime)
+	prometheus.MustRegister(sunRiseTime)
+	prometheus.MustRegister(sunSetTime)
 }
 
 func main() {
@@ -96,6 +151,7 @@ func main() {
 	wuApiKey := viper.GetString("wunderground.apikey")
 
 	go forecastWatch(wuApiKey)
+	go astroWatch(wuApiKey)
 
 	http.Handle("/metrics", promhttp.Handler())
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
