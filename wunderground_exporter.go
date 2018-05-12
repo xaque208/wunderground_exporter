@@ -3,15 +3,16 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
+	// nrgo "github.com/newrelic/go-agent"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/xaque208/gowu"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"strconv"
 )
 
 type Forecast struct {
@@ -94,14 +95,14 @@ func astroWatch(apiKey string) {
 		}
 
 		moonRiseHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%d%d", moonPhase.MoonRise.Hour, moonPhase.MoonRise.Minute), 32)
+			fmt.Sprintf("%s.%s", moonPhase.MoonRise.Hour, moonPhase.MoonRise.Minute), 32)
 		moonSetHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%d%d", moonPhase.MoonSet.Hour, moonPhase.MoonSet.Minute), 32)
+			fmt.Sprintf("%s.%s", moonPhase.MoonSet.Hour, moonPhase.MoonSet.Minute), 32)
 
 		sunRiseHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%d%d", sunPhase.SunRise.Hour, sunPhase.SunRise.Minute), 32)
+			fmt.Sprintf("%s.%s", sunPhase.SunRise.Hour, sunPhase.SunRise.Minute), 32)
 		sunSetHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%d%d", sunPhase.SunSet.Hour, sunPhase.SunSet.Minute), 32)
+			fmt.Sprintf("%s.%s", sunPhase.SunSet.Hour, sunPhase.SunSet.Minute), 32)
 
 		moonRiseTime.With(prometheus.Labels{}).Set(moonRiseHourMin)
 		moonSetTime.With(prometheus.Labels{}).Set(moonSetHourMin)
