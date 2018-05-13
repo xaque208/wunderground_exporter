@@ -154,7 +154,7 @@
   branch = "master"
   name = "github.com/xaque208/gowu"
   packages = ["."]
-  revision = "bf8e5aecdd5e2170d91f8d3bd0efa57418921bbe"
+  revision = "a4504a9205c8563d60b33ec9c7f0f6b2364cf2a2"
 
 [[projects]]
   branch = "master"

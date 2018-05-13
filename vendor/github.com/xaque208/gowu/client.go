@@ -13,6 +13,7 @@ import (
 
 const (
 	urlfmt     = "http://api.wunderground.com/api/%s/%s/q/%s/%s.json"
+	astronomy  = "astronomy"
 	forecast   = "forecast"
 	conditions = "conditions"
 )
@@ -42,12 +43,14 @@ func APICall(url string) ([]byte, error) {
 // Issue the request to the API
 func (w *WuClient) getForEntity(e interface{}, section, state, city string) error {
 	req_url := fmt.Sprintf(urlfmt, w.apikey, section, state, city)
-	log.Println(req_url)
+	// log.Println(req_url)
 
 	body, err := APICall(req_url)
 	if err != nil {
 		return err
 	}
+
+	// fmt.Printf("%+v", string(body))
 
 	err = json.Unmarshal(body, e)
 	if err != nil {
@@ -75,4 +78,13 @@ func (w *WuClient) GetForecast(city, state string) (*Forecast, error) {
 		log.Error(err)
 	}
 	return &f.Forecast, nil
+}
+
+func (w *WuClient) GetAstronomy(city, state string) (*MoonPhase, *SunPhase, error) {
+	var a AstronomyResponse
+	err := w.getForEntity(&a, astronomy, state, city)
+	if err != nil {
+		log.Error(err)
+	}
+	return &a.MoonPhase, &a.SunPhase, nil
 }
