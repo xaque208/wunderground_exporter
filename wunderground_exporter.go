@@ -3,10 +3,11 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
-	// nrgo "github.com/newrelic/go-agent"
+	"github.com/newrelic/go-agent"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
@@ -52,11 +53,18 @@ var (
 	}, nil)
 )
 
+var nrApp newrelic.Application
+
 func forecastWatch(apiKey string) {
 
 	for {
+		txn := nrApp.StartTransaction("forecastWatch", nil, nil)
 		c := gowu.NewClient(apiKey)
+
+		segment := newrelic.StartSegment(txn, "GetForecast")
 		fore, err := c.GetForecast("portland", "or")
+		segment.End()
+		txn.End()
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -87,8 +95,13 @@ func forecastWatch(apiKey string) {
 func astroWatch(apiKey string) {
 
 	for {
+		txn := nrApp.StartTransaction("astroWatch", nil, nil)
 		c := gowu.NewClient(apiKey)
+
+		segment := newrelic.StartSegment(txn, "GetAstronomy")
 		moonPhase, sunPhase, err := c.GetAstronomy("portland", "or")
+		segment.End()
+		txn.End()
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -125,6 +138,16 @@ func init() {
 }
 
 func main() {
+
+	nrLicense := os.Getenv("NEWRELIC_LICENSE")
+	if nrLicense != "" {
+		config := newrelic.NewConfig("wunderground_exporter", nrLicense)
+		app, err := newrelic.NewApplication(config)
+		if err != nil {
+			log.Error(err)
+		}
+		nrApp = app
+	}
 
 	var (
 		listenAddress = kingpin.Flag("web.listen-address", "Address on which to expose metrics and web interface.").Default(":9101").String()
