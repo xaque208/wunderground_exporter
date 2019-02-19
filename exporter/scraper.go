@@ -1,18 +1,13 @@
-package main
+package exporter
 
 import (
 	"fmt"
-	"net/http"
 	"strconv"
 	"time"
 
-	// nrgo "github.com/newrelic/go-agent"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/prometheus/common/log"
 	"github.com/xaque208/gowu"
-	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 type Forecast struct {
@@ -51,6 +46,17 @@ var (
 		Help: "Time of Sun Set",
 	}, nil)
 )
+
+func init() {
+	prometheus.MustRegister(
+		forecastHighTemp,
+		forecastLowTemp,
+		moonRiseTime,
+		moonSetTime,
+		sunRiseTime,
+		sunSetTime,
+	)
+}
 
 func forecastWatch(apiKey string) {
 
@@ -115,45 +121,7 @@ func astroWatch(apiKey string) {
 	}
 }
 
-func init() {
-	prometheus.MustRegister(forecastHighTemp)
-	prometheus.MustRegister(forecastLowTemp)
-	prometheus.MustRegister(moonRiseTime)
-	prometheus.MustRegister(moonSetTime)
-	prometheus.MustRegister(sunRiseTime)
-	prometheus.MustRegister(sunSetTime)
-}
-
-func main() {
-
-	var (
-		listenAddress = kingpin.Flag("web.listen-address", "Address on which to expose metrics and web interface.").Default(":9101").String()
-		configPath    = kingpin.Flag("config", "Specify the configuration directory").Default(".").String()
-		verbose       = kingpin.Flag("verbose", "Increase verbosity").Short('v').Bool()
-	)
-
-	kingpin.HelpFlag.Short('h')
-	kingpin.Parse()
-
-	if *verbose {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	viper.SetConfigName("wunderground_exporter")
-	viper.AddConfigPath(*configPath)
-	viper.AddConfigPath(".")
-
-	log.Debug("Reading configuration file")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	wuApiKey := viper.GetString("wunderground.apikey")
-
-	go forecastWatch(wuApiKey)
-	go astroWatch(wuApiKey)
-
-	http.Handle("/metrics", promhttp.Handler())
-	log.Fatal(http.ListenAndServe(*listenAddress, nil))
+func ScrapeMetrics(apiKey string) {
+	forecastWatch(apiKey)
+	astroWatch(apiKey)
 }
