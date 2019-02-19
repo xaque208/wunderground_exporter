@@ -84,6 +84,7 @@ func run(cmd *cobra.Command, args []string) {
 	go exporter.StartMetricsServer(listenAddress)
 
 	// Load CA cert
+	log.Debugf("Tick interval: %d", interval)
 	for range time.Tick(time.Duration(interval) * time.Second) {
 		log.Debug("Scraping metrics from wunderground")
 		exporter.ScrapeMetrics(apiKey)
