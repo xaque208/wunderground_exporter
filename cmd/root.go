@@ -78,6 +78,11 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	apiKey = viper.GetString("wunderground.apikey")
+
+	if apiKey == "" {
+		log.Fatal("Wunderground api key must be present in the configuraiton")
+	}
+
 	interval = viper.GetInt("interval")
 
 	log.Infof("Starting prometheus HTTP metrics server: %s", listenAddress)
