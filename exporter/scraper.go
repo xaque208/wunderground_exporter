@@ -3,7 +3,6 @@ package exporter
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/log"
@@ -59,66 +58,54 @@ func init() {
 }
 
 func forecastWatch(apiKey string) {
+	c := gowu.NewClient(apiKey)
+	fore, err := c.GetForecast("portland", "or")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
-	for {
-		c := gowu.NewClient(apiKey)
-		fore, err := c.GetForecast("portland", "or")
+	for i, day := range fore.Simpleforecast.Forecastday {
+		dayString := strconv.Itoa(i)
+
+		highTemp, err := strconv.ParseFloat(day.High.Celsius, 32)
 		if err != nil {
-			fmt.Println(err)
-			return
+			log.Error(err)
 		}
 
-		for i, day := range fore.Simpleforecast.Forecastday {
-			dayString := strconv.Itoa(i)
-
-			highTemp, err := strconv.ParseFloat(day.High.Celsius, 32)
-			if err != nil {
-				log.Error(err)
-			}
-
-			lowTemp, err := strconv.ParseFloat(day.Low.Celsius, 32)
-			if err != nil {
-				log.Error(err)
-			}
-
-			forecastHighTemp.With(prometheus.Labels{"day": dayString}).Set(highTemp)
-			forecastLowTemp.With(prometheus.Labels{"day": dayString}).Set(lowTemp)
+		lowTemp, err := strconv.ParseFloat(day.Low.Celsius, 32)
+		if err != nil {
+			log.Error(err)
 		}
 
-		//Sleep 15 minutes between updates for API limits
-		time.Sleep(900 * time.Second)
+		forecastHighTemp.With(prometheus.Labels{"day": dayString}).Set(highTemp)
+		forecastLowTemp.With(prometheus.Labels{"day": dayString}).Set(lowTemp)
 	}
 }
 
 func astroWatch(apiKey string) {
-
-	for {
-		c := gowu.NewClient(apiKey)
-		moonPhase, sunPhase, err := c.GetAstronomy("portland", "or")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		moonRiseHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%s.%s", moonPhase.MoonRise.Hour, moonPhase.MoonRise.Minute), 32)
-		moonSetHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%s.%s", moonPhase.MoonSet.Hour, moonPhase.MoonSet.Minute), 32)
-
-		sunRiseHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%s.%s", sunPhase.SunRise.Hour, sunPhase.SunRise.Minute), 32)
-		sunSetHourMin, err := strconv.ParseFloat(
-			fmt.Sprintf("%s.%s", sunPhase.SunSet.Hour, sunPhase.SunSet.Minute), 32)
-
-		moonRiseTime.With(prometheus.Labels{}).Set(moonRiseHourMin)
-		moonSetTime.With(prometheus.Labels{}).Set(moonSetHourMin)
-
-		sunRiseTime.With(prometheus.Labels{}).Set(sunRiseHourMin)
-		sunSetTime.With(prometheus.Labels{}).Set(sunSetHourMin)
-
-		//Sleep 15 minutes between updates for API limits
-		time.Sleep(900 * time.Second)
+	c := gowu.NewClient(apiKey)
+	moonPhase, sunPhase, err := c.GetAstronomy("portland", "or")
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
+
+	moonRiseHourMin, err := strconv.ParseFloat(
+		fmt.Sprintf("%s.%s", moonPhase.MoonRise.Hour, moonPhase.MoonRise.Minute), 32)
+	moonSetHourMin, err := strconv.ParseFloat(
+		fmt.Sprintf("%s.%s", moonPhase.MoonSet.Hour, moonPhase.MoonSet.Minute), 32)
+
+	sunRiseHourMin, err := strconv.ParseFloat(
+		fmt.Sprintf("%s.%s", sunPhase.SunRise.Hour, sunPhase.SunRise.Minute), 32)
+	sunSetHourMin, err := strconv.ParseFloat(
+		fmt.Sprintf("%s.%s", sunPhase.SunSet.Hour, sunPhase.SunSet.Minute), 32)
+
+	moonRiseTime.With(prometheus.Labels{}).Set(moonRiseHourMin)
+	moonSetTime.With(prometheus.Labels{}).Set(moonSetHourMin)
+
+	sunRiseTime.With(prometheus.Labels{}).Set(sunRiseHourMin)
+	sunSetTime.With(prometheus.Labels{}).Set(sunSetHourMin)
 }
 
 func ScrapeMetrics(apiKey string) {
