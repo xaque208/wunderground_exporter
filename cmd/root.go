@@ -36,13 +36,18 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Increase verbosity")
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.wunderground_exporter.yaml)")
+	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Increase verbosity")
 	rootCmd.PersistentFlags().StringVarP(&listenAddress, "listen", "L", ":9100", "The listen address (default is :9100")
+	rootCmd.PersistentFlags().StringVarP(&apiKey, "apikey", "a", "", "The wunderground api key")
+	rootCmd.PersistentFlags().IntVarP(&interval, "interval", "i", 900, "The scrap interval for the wunderground api")
 
-	rootCmd.MarkPersistentFlagRequired("config")
+	err := viper.BindPFlag("interval", rootCmd.PersistentFlags().Lookup("interval"))
+	if err != nil {
+		log.Error(err)
+	}
 
-	viper.SetDefault("interval", 30)
+	viper.SetDefault("interval", 901)
 }
 
 // initConfig reads in the config file and ENV variables if set.
@@ -58,8 +63,8 @@ func initConfig() {
 		}
 
 		// Search config in home directory with name ".wunderground_exporter" (without extension).
-		viper.AddConfigPath(home)
 		viper.SetConfigName(".wunderground_exporter")
+		viper.AddConfigPath(home)
 	}
 
 	viper.AutomaticEnv()
